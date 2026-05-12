@@ -1,0 +1,984 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+<title>Gem Merge</title>
+<style>
+  :root {
+    --bg-1: #1a0b2e;
+    --bg-2: #2d1b69;
+    --bg-3: #0f0524;
+    --panel: rgba(255, 255, 255, 0.08);
+    --panel-border: rgba(255, 255, 255, 0.18);
+    --text: #f5f0ff;
+    --muted: #b9a7e0;
+    --accent: #ffd166;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    background: radial-gradient(circle at 30% 20%, var(--bg-2) 0%, var(--bg-1) 40%, var(--bg-3) 100%);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  /* Decorative animated stars */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 12% 18%, rgba(255,255,255,0.7), transparent 50%),
+      radial-gradient(1.5px 1.5px at 78% 32%, rgba(255,255,255,0.6), transparent 50%),
+      radial-gradient(1px 1px at 45% 80%, rgba(255,255,255,0.5), transparent 50%),
+      radial-gradient(2px 2px at 88% 75%, rgba(255,255,255,0.6), transparent 50%),
+      radial-gradient(1.5px 1.5px at 22% 65%, rgba(255,255,255,0.5), transparent 50%),
+      radial-gradient(1px 1px at 60% 12%, rgba(255,255,255,0.7), transparent 50%);
+    pointer-events: none;
+    animation: twinkle 4s ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    from { opacity: 0.4; }
+    to   { opacity: 0.9; }
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    z-index: 1;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #ff7ad9, #7afcff, #ffd166);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 24px rgba(255, 122, 217, 0.25);
+  }
+
+  .icon-btn {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: transform 0.15s, background 0.15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.16); }
+  .icon-btn:active { transform: scale(0.92); }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 10px 12px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+  }
+  .stat .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+  }
+  .stat .value {
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .progress-wrap {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 10px 14px;
+    backdrop-filter: blur(8px);
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .progress-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff7ad9, #7afcff);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+    box-shadow: 0 0 12px rgba(122, 252, 255, 0.6);
+  }
+
+  .board-wrap {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 22px;
+    padding: 10px;
+    aspect-ratio: 1;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), inset 0 0 40px rgba(255,255,255,0.04);
+  }
+
+  .board {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    gap: 6px;
+    overflow: hidden;
+    border-radius: 16px;
+  }
+
+  .cell {
+    position: relative;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  }
+
+  .gem {
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    transition: transform 0.18s cubic-bezier(.34,1.56,.64,1), box-shadow 0.18s, opacity 0.18s, inset 0.18s;
+    will-change: transform;
+  }
+  .gem.selected {
+    transform: scale(1.1);
+    z-index: 5;
+    box-shadow:
+      0 0 0 3px rgba(255, 255, 255, 0.85),
+      0 0 24px rgba(255, 255, 255, 0.6),
+      inset 0 -10px 18px rgba(0,0,0,0.25),
+      inset 0 6px 14px rgba(255,255,255,0.45);
+  }
+  .gem.merging {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  .gem.spawn {
+    animation: pop 0.3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .gem.merged {
+    animation: pulse 0.45s ease-out;
+  }
+  @keyframes pop {
+    from { transform: scale(0); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  @keyframes pulse {
+    0%   { transform: scale(0.4); }
+    50%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+  }
+
+  /* Inner shine to make gems sparkle */
+  .gem::before {
+    content: "";
+    position: absolute;
+    top: 12%;
+    left: 18%;
+    width: 35%;
+    height: 35%;
+    background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.85), rgba(255,255,255,0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .gem::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 -10px 18px rgba(0,0,0,0.35), inset 0 6px 14px rgba(255,255,255,0.35);
+    pointer-events: none;
+  }
+
+  /* Floating "+score" indicator */
+  .pop-score {
+    position: absolute;
+    pointer-events: none;
+    font-weight: 800;
+    font-size: 18px;
+    color: var(--accent);
+    text-shadow: 0 0 8px rgba(255,209,102,0.7), 0 1px 2px rgba(0,0,0,0.4);
+    animation: floatup 0.8s ease-out forwards;
+    z-index: 10;
+  }
+  @keyframes floatup {
+    from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+    20%  { transform: translate(-50%, -60%) scale(1.1); opacity: 1; }
+    to   { transform: translate(-50%, -120%) scale(1); opacity: 0; }
+  }
+
+  /* Particles */
+  .particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 8;
+    animation: spark 0.6s ease-out forwards;
+  }
+  @keyframes spark {
+    from { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    to   { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+  }
+
+  .hint {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    min-height: 18px;
+  }
+
+  /* Modal overlay for menus and level transitions */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 5, 36, 0.78);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .panel {
+    background: linear-gradient(180deg, rgba(45,27,105,0.95), rgba(26,11,46,0.95));
+    border: 1px solid var(--panel-border);
+    border-radius: 22px;
+    padding: 28px 24px;
+    width: min(360px, 92vw);
+    text-align: center;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    transform: scale(0.94);
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .overlay.show .panel { transform: scale(1); }
+
+  .panel h2 {
+    margin: 0 0 6px;
+    font-size: 28px;
+    background: linear-gradient(90deg, #ff7ad9, #7afcff, #ffd166);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .panel p {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .btn {
+    display: inline-block;
+    background: linear-gradient(180deg, #ff7ad9, #b557ff);
+    border: none;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 12px 22px;
+    border-radius: 14px;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(181, 87, 255, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+    margin: 4px;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(181, 87, 255, 0.55); }
+  .btn:active { transform: translateY(0); }
+  .btn.secondary {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--panel-border);
+    box-shadow: none;
+  }
+
+  .level-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .level-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .level-row:hover { background: rgba(255,255,255,0.12); }
+  .level-row:active { transform: scale(0.98); }
+  .level-row .meta {
+    text-align: left;
+  }
+  .level-row .name { font-weight: 700; font-size: 15px; }
+  .level-row .desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .level-row .badge {
+    background: linear-gradient(135deg, #ff7ad9, #b557ff);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .level-row.locked { opacity: 0.5; cursor: not-allowed; }
+
+  .stars {
+    color: var(--accent);
+    font-size: 22px;
+    letter-spacing: 4px;
+    margin: 8px 0 14px;
+    text-shadow: 0 0 12px rgba(255, 209, 102, 0.5);
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <div class="title">Gem Merge</div>
+    <button class="icon-btn" id="btn-sound" title="Toggle sound" aria-label="Toggle sound">&#x1F50A;</button>
+    <button class="icon-btn" id="btn-menu" title="Levels" aria-label="Levels">&#x2630;</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="label">Level</div><div class="value" id="ui-level">1</div></div>
+    <div class="stat"><div class="label">Score</div><div class="value" id="ui-score">0</div></div>
+    <div class="stat"><div class="label">Moves</div><div class="value" id="ui-moves">0</div></div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="ui-goal">Reach a Tier 4 gem</span>
+      <span id="ui-progress-text">0 / 1</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="ui-progress"></div></div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="hint" id="hint">Tap two adjacent gems of the same color to merge them.</div>
+</div>
+
+<!-- Overlay used for menus / level start / end-of-level -->
+<div class="overlay" id="overlay">
+  <div class="panel" id="panel">
+    <!-- populated by JS -->
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---------- Game configuration ----------
+  // Each tier has a vivid gem color (gradient from light->dark).
+  const TIER_COLORS = [
+    { from: "#ff6b6b", to: "#c92a2a" }, // 1 ruby
+    { from: "#ffd43b", to: "#e67700" }, // 2 amber
+    { from: "#69db7c", to: "#2b8a3e" }, // 3 emerald
+    { from: "#4dabf7", to: "#1864ab" }, // 4 sapphire
+    { from: "#cc5de8", to: "#862e9c" }, // 5 amethyst
+    { from: "#f783ac", to: "#a61e4d" }, // 6 rose
+    { from: "#63e6be", to: "#0ca678" }, // 7 jade
+    { from: "#ffa94d", to: "#d9480f" }, // 8 topaz
+    { from: "#e599f7", to: "#5f3dc4" }, // 9 mythic
+    { from: "#ffec99", to: "#f08c00" }, // 10 sun
+  ];
+
+  const LEVELS = [
+    {
+      id: 1,
+      name: "Tutorial Mines",
+      desc: "Merge gems to create a Tier 4.",
+      size: 5,
+      tiersAtSpawn: 2,    // new spawns drawn from tiers 1..2
+      goalTier: 4,
+      goalCount: 1,
+      maxMoves: 30,
+    },
+    {
+      id: 2,
+      name: "Crystal Cavern",
+      desc: "Forge two Tier 5 gems.",
+      size: 6,
+      tiersAtSpawn: 3,
+      goalTier: 5,
+      goalCount: 2,
+      maxMoves: 45,
+    },
+    {
+      id: 3,
+      name: "Dragon's Hoard",
+      desc: "Reach a legendary Tier 6.",
+      size: 6,
+      tiersAtSpawn: 3,
+      goalTier: 6,
+      goalCount: 1,
+      maxMoves: 50,
+    },
+    {
+      id: 4,
+      name: "Mythic Vault",
+      desc: "Forge three Tier 6 gems.",
+      size: 7,
+      tiersAtSpawn: 4,
+      goalTier: 6,
+      goalCount: 3,
+      maxMoves: 70,
+    },
+  ];
+
+  // ---------- Sound ----------
+  const Sound = (() => {
+    let ctx = null;
+    let enabled = true;
+    function ensure() {
+      if (!ctx) {
+        try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch { ctx = null; }
+      }
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      return ctx;
+    }
+    function tone({ freq = 440, dur = 0.18, type = "sine", gain = 0.18, slide = 0, attack = 0.005, release = 0.12 }) {
+      const ac = ensure();
+      if (!ac || !enabled) return;
+      const osc = ac.createOscillator();
+      const g = ac.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ac.currentTime);
+      if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(20, freq + slide), ac.currentTime + dur);
+      g.gain.setValueAtTime(0, ac.currentTime);
+      g.gain.linearRampToValueAtTime(gain, ac.currentTime + attack);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur + release);
+      osc.connect(g).connect(ac.destination);
+      osc.start();
+      osc.stop(ac.currentTime + dur + release + 0.05);
+    }
+    return {
+      isEnabled: () => enabled,
+      toggle: () => { enabled = !enabled; if (enabled) ensure(); return enabled; },
+      resume: () => { ensure(); },
+      // Pleasant ascending chime; pitch rises with the resulting tier.
+      merge(tier) {
+        const base = 440;
+        const f = base * Math.pow(1.122, tier - 1); // ~semitone steps
+        tone({ freq: f, dur: 0.10, type: "triangle", gain: 0.18, slide: f * 0.6, release: 0.18 });
+        setTimeout(() => tone({ freq: f * 1.5, dur: 0.12, type: "sine", gain: 0.14, slide: f * 0.4, release: 0.20 }), 70);
+      },
+      select() {
+        tone({ freq: 880, dur: 0.04, type: "sine", gain: 0.08, release: 0.06 });
+      },
+      invalid() {
+        tone({ freq: 200, dur: 0.08, type: "square", gain: 0.10, slide: -60, release: 0.08 });
+      },
+      win() {
+        const notes = [523.25, 659.25, 783.99, 1046.5];
+        notes.forEach((f, i) => setTimeout(() => tone({ freq: f, dur: 0.18, type: "triangle", gain: 0.18, release: 0.25 }), i * 110));
+      },
+      lose() {
+        tone({ freq: 330, dur: 0.18, type: "sawtooth", gain: 0.13, slide: -180, release: 0.25 });
+        setTimeout(() => tone({ freq: 220, dur: 0.22, type: "sawtooth", gain: 0.13, slide: -120, release: 0.30 }), 180);
+      },
+      spawn() {
+        tone({ freq: 660, dur: 0.04, type: "sine", gain: 0.05, release: 0.06 });
+      },
+    };
+  })();
+
+  // ---------- Persistence ----------
+  const SAVE_KEY = "gem-merge-save-v1";
+  function loadProgress() {
+    try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function saveProgress(data) {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch {}
+  }
+
+  // ---------- Game state ----------
+  const state = {
+    level: null,
+    size: 0,
+    grid: [],          // 2D array of tier numbers (0 = empty)
+    selected: null,    // {r, c}
+    score: 0,
+    moves: 0,
+    goalProgress: 0,
+    busy: false,
+    over: false,
+  };
+
+  // ---------- DOM refs ----------
+  const $board = document.getElementById("board");
+  const $level = document.getElementById("ui-level");
+  const $score = document.getElementById("ui-score");
+  const $moves = document.getElementById("ui-moves");
+  const $goal = document.getElementById("ui-goal");
+  const $progressText = document.getElementById("ui-progress-text");
+  const $progress = document.getElementById("ui-progress");
+  const $hint = document.getElementById("hint");
+  const $overlay = document.getElementById("overlay");
+  const $panel = document.getElementById("panel");
+  const $btnSound = document.getElementById("btn-sound");
+  const $btnMenu = document.getElementById("btn-menu");
+
+  // ---------- Helpers ----------
+  function inBounds(r, c) { return r >= 0 && r < state.size && c >= 0 && c < state.size; }
+  function adjacent(a, b) {
+    const dr = Math.abs(a.r - b.r), dc = Math.abs(a.c - b.c);
+    return (dr + dc) === 1;
+  }
+  function randomTier(maxTier) { return 1 + Math.floor(Math.random() * maxTier); }
+
+  function colorFor(tier) {
+    const idx = Math.min(tier - 1, TIER_COLORS.length - 1);
+    return TIER_COLORS[idx];
+  }
+  function gradientFor(tier) {
+    const c = colorFor(tier);
+    return `radial-gradient(circle at 35% 30%, ${c.from} 0%, ${c.to} 80%)`;
+  }
+
+  // ---------- Rendering ----------
+  function buildBoardDOM() {
+    $board.innerHTML = "";
+    $board.style.gridTemplateColumns = `repeat(${state.size}, 1fr)`;
+    $board.style.gridTemplateRows = `repeat(${state.size}, 1fr)`;
+    for (let r = 0; r < state.size; r++) {
+      for (let c = 0; c < state.size; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        $board.appendChild(cell);
+      }
+    }
+  }
+
+  function cellAt(r, c) {
+    return $board.children[r * state.size + c];
+  }
+
+  function renderGem(r, c, { spawn = false, merged = false } = {}) {
+    const cell = cellAt(r, c);
+    cell.innerHTML = "";
+    const tier = state.grid[r][c];
+    if (!tier) return;
+    const gem = document.createElement("div");
+    gem.className = "gem";
+    if (spawn) gem.classList.add("spawn");
+    if (merged) gem.classList.add("merged");
+    gem.style.background = gradientFor(tier);
+    gem.textContent = tier;
+    gem.style.fontSize = `${Math.max(14, 26 - state.size * 1.5)}px`;
+    cell.appendChild(gem);
+  }
+
+  function renderAll() {
+    for (let r = 0; r < state.size; r++) {
+      for (let c = 0; c < state.size; c++) {
+        renderGem(r, c);
+      }
+    }
+  }
+
+  function updateHud() {
+    const lvl = state.level;
+    $level.textContent = lvl.id;
+    $score.textContent = state.score;
+    $moves.textContent = `${state.moves}/${lvl.maxMoves}`;
+    $goal.textContent = `Forge ${lvl.goalCount} × Tier ${lvl.goalTier}`;
+    const made = Math.min(state.goalProgress, lvl.goalCount);
+    $progressText.textContent = `${made} / ${lvl.goalCount}`;
+    $progress.style.width = `${(made / lvl.goalCount) * 100}%`;
+  }
+
+  function setHint(msg) { $hint.textContent = msg; }
+
+  // ---------- Interactions ----------
+  function onCellClick(e) {
+    if (state.busy || state.over) return;
+    const cell = e.target.closest(".cell");
+    if (!cell) return;
+    const r = +cell.dataset.r, c = +cell.dataset.c;
+    if (!state.grid[r][c]) {
+      // empty cell: clear selection
+      clearSelection();
+      return;
+    }
+    if (!state.selected) {
+      selectCell(r, c);
+      Sound.select();
+      return;
+    }
+    if (state.selected.r === r && state.selected.c === c) {
+      clearSelection();
+      return;
+    }
+    const a = state.selected, b = { r, c };
+    if (adjacent(a, b) && state.grid[a.r][a.c] === state.grid[b.r][b.c]) {
+      mergeGems(a, b);
+    } else {
+      // re-select target
+      clearSelection();
+      selectCell(r, c);
+      Sound.select();
+    }
+  }
+
+  function selectCell(r, c) {
+    state.selected = { r, c };
+    const cell = cellAt(r, c);
+    const gem = cell.querySelector(".gem");
+    if (gem) gem.classList.add("selected");
+  }
+  function clearSelection() {
+    if (!state.selected) return;
+    const cell = cellAt(state.selected.r, state.selected.c);
+    const gem = cell && cell.querySelector(".gem");
+    if (gem) gem.classList.remove("selected");
+    state.selected = null;
+  }
+
+  // ---------- Particles ----------
+  function spawnParticles(cell, tier) {
+    const rect = cell.getBoundingClientRect();
+    const wrapRect = $board.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2 - wrapRect.left;
+    const cy = rect.top + rect.height / 2 - wrapRect.top;
+    const c = colorFor(tier);
+    const N = 8;
+    for (let i = 0; i < N; i++) {
+      const p = document.createElement("div");
+      p.className = "particle";
+      const angle = (i / N) * Math.PI * 2 + Math.random() * 0.4;
+      const dist = 40 + Math.random() * 30;
+      p.style.setProperty("--dx", `${Math.cos(angle) * dist - 3}px`);
+      p.style.setProperty("--dy", `${Math.sin(angle) * dist - 3}px`);
+      p.style.left = cx + "px";
+      p.style.top = cy + "px";
+      p.style.background = `radial-gradient(circle, ${c.from}, ${c.to})`;
+      p.style.boxShadow = `0 0 8px ${c.from}`;
+      $board.appendChild(p);
+      setTimeout(() => p.remove(), 700);
+    }
+  }
+
+  function popScore(cell, value) {
+    const rect = cell.getBoundingClientRect();
+    const wrapRect = $board.getBoundingClientRect();
+    const span = document.createElement("div");
+    span.className = "pop-score";
+    span.textContent = `+${value}`;
+    span.style.left = (rect.left + rect.width / 2 - wrapRect.left) + "px";
+    span.style.top = (rect.top + rect.height / 2 - wrapRect.top) + "px";
+    span.style.transform = "translate(-50%, -50%)";
+    $board.appendChild(span);
+    setTimeout(() => span.remove(), 850);
+  }
+
+  // ---------- Merge logic ----------
+  function mergeGems(a, b) {
+    state.busy = true;
+    clearSelection();
+    const tier = state.grid[a.r][a.c];
+    const newTier = tier + 1;
+
+    // Animate the source gem flying into the target gem.
+    const cellA = cellAt(a.r, a.c);
+    const cellB = cellAt(b.r, b.c);
+    const gemA = cellA.querySelector(".gem");
+    const gemB = cellB.querySelector(".gem");
+
+    if (gemA && gemB) {
+      const rA = cellA.getBoundingClientRect();
+      const rB = cellB.getBoundingClientRect();
+      const dx = (rB.left - rA.left);
+      const dy = (rB.top - rA.top);
+      gemA.style.transition = "transform 0.18s ease, opacity 0.18s ease";
+      gemA.style.transform = `translate(${dx}px, ${dy}px) scale(0.5)`;
+      gemA.style.opacity = "0";
+    }
+
+    setTimeout(() => {
+      state.grid[a.r][a.c] = 0;
+      state.grid[b.r][b.c] = newTier;
+      renderGem(a.r, a.c);
+      renderGem(b.r, b.c, { merged: true });
+
+      const points = newTier * 10;
+      state.score += points;
+      state.moves += 1;
+      Sound.merge(newTier);
+      spawnParticles(cellB, newTier);
+      popScore(cellB, points);
+
+      if (newTier === state.level.goalTier) {
+        state.goalProgress += 1;
+      }
+
+      // Spawn a new gem in a random empty cell (keeps the board lively).
+      const empties = [];
+      for (let r = 0; r < state.size; r++) {
+        for (let c = 0; c < state.size; c++) {
+          if (!state.grid[r][c]) empties.push({ r, c });
+        }
+      }
+      if (empties.length) {
+        const pick = empties[Math.floor(Math.random() * empties.length)];
+        state.grid[pick.r][pick.c] = randomTier(state.level.tiersAtSpawn);
+        renderGem(pick.r, pick.c, { spawn: true });
+        Sound.spawn();
+      }
+
+      updateHud();
+      state.busy = false;
+      checkEnd();
+    }, 180);
+  }
+
+  function hasAnyMove() {
+    for (let r = 0; r < state.size; r++) {
+      for (let c = 0; c < state.size; c++) {
+        const t = state.grid[r][c];
+        if (!t) continue;
+        const neighbors = [[r+1,c],[r,c+1]];
+        for (const [nr, nc] of neighbors) {
+          if (inBounds(nr, nc) && state.grid[nr][nc] === t) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function checkEnd() {
+    const lvl = state.level;
+    if (state.goalProgress >= lvl.goalCount) {
+      finishLevel(true);
+      return;
+    }
+    if (state.moves >= lvl.maxMoves || !hasAnyMove()) {
+      finishLevel(false);
+    }
+  }
+
+  // ---------- Level lifecycle ----------
+  function startLevel(levelId) {
+    const lvl = LEVELS.find(l => l.id === levelId) || LEVELS[0];
+    state.level = lvl;
+    state.size = lvl.size;
+    state.grid = Array.from({ length: lvl.size }, () => Array(lvl.size).fill(0));
+    state.score = 0;
+    state.moves = 0;
+    state.goalProgress = 0;
+    state.selected = null;
+    state.busy = false;
+    state.over = false;
+
+    // Fill ~70% of the board with random low-tier gems, ensuring at least one merge is possible.
+    const total = lvl.size * lvl.size;
+    const fillCount = Math.floor(total * 0.7);
+    const indices = Array.from({ length: total }, (_, i) => i).sort(() => Math.random() - 0.5);
+    for (let i = 0; i < fillCount; i++) {
+      const idx = indices[i];
+      const r = Math.floor(idx / lvl.size), c = idx % lvl.size;
+      state.grid[r][c] = randomTier(lvl.tiersAtSpawn);
+    }
+
+    // Guarantee a starting move so first level isn't dead.
+    if (!hasAnyMove()) {
+      // Force two adjacent matches.
+      state.grid[0][0] = 1;
+      state.grid[0][1] = 1;
+    }
+
+    buildBoardDOM();
+    renderAll();
+    updateHud();
+    setHint("Tap two adjacent gems of the same tier to merge them.");
+    hideOverlay();
+  }
+
+  function finishLevel(won) {
+    state.over = true;
+    clearSelection();
+    const lvl = state.level;
+    const progress = loadProgress();
+    if (won) {
+      Sound.win();
+      progress.maxLevel = Math.max(progress.maxLevel || 1, lvl.id + 1);
+      progress[`bestScore_${lvl.id}`] = Math.max(progress[`bestScore_${lvl.id}`] || 0, state.score);
+      saveProgress(progress);
+      const next = LEVELS.find(l => l.id === lvl.id + 1);
+      const stars = computeStars();
+      showPanel(`
+        <h2>Level Cleared!</h2>
+        <div class="stars">${"★".repeat(stars)}${"☆".repeat(3 - stars)}</div>
+        <p>You scored <b>${state.score}</b> points in <b>${state.moves}</b> moves.</p>
+        ${next
+          ? `<button class="btn" data-action="next">Next Level</button>`
+          : `<p>You've conquered every level. Bravo!</p>`}
+        <button class="btn secondary" data-action="menu">Levels</button>
+      `);
+    } else {
+      Sound.lose();
+      const reason = state.moves >= lvl.maxMoves ? "Out of moves." : "No more merges available.";
+      showPanel(`
+        <h2>Try Again</h2>
+        <p>${reason} You scored <b>${state.score}</b> points.</p>
+        <button class="btn" data-action="retry">Retry</button>
+        <button class="btn secondary" data-action="menu">Levels</button>
+      `);
+    }
+  }
+
+  function computeStars() {
+    // 1 star: cleared. 2 stars: <= 80% moves used. 3 stars: <= 60% moves used.
+    const ratio = state.moves / state.level.maxMoves;
+    if (ratio <= 0.6) return 3;
+    if (ratio <= 0.8) return 2;
+    return 1;
+  }
+
+  // ---------- Overlay & menu ----------
+  function showPanel(html) {
+    $panel.innerHTML = html;
+    $overlay.classList.add("show");
+  }
+  function hideOverlay() {
+    $overlay.classList.remove("show");
+  }
+
+  function showLevelMenu() {
+    const progress = loadProgress();
+    const maxUnlocked = progress.maxLevel || 1;
+    const rows = LEVELS.map(l => {
+      const unlocked = l.id <= maxUnlocked;
+      const best = progress[`bestScore_${l.id}`];
+      return `
+        <div class="level-row ${unlocked ? "" : "locked"}" data-level="${l.id}">
+          <div class="meta">
+            <div class="name">${l.id}. ${l.name}</div>
+            <div class="desc">${l.desc}${best ? ` · Best ${best}` : ""}</div>
+          </div>
+          <div class="badge">${unlocked ? "Play" : "Locked"}</div>
+        </div>`;
+    }).join("");
+    showPanel(`
+      <h2>Choose a Level</h2>
+      <div class="level-list">${rows}</div>
+      <button class="btn secondary" data-action="close">Close</button>
+    `);
+  }
+
+  // ---------- Wire up events ----------
+  $board.addEventListener("click", onCellClick);
+
+  $overlay.addEventListener("click", (e) => {
+    if (e.target === $overlay) hideOverlay();
+    const action = e.target.dataset && e.target.dataset.action;
+    if (action === "next") {
+      const next = LEVELS.find(l => l.id === state.level.id + 1);
+      if (next) startLevel(next.id);
+      else hideOverlay();
+    } else if (action === "retry") {
+      startLevel(state.level.id);
+    } else if (action === "menu") {
+      showLevelMenu();
+    } else if (action === "close") {
+      hideOverlay();
+    }
+    const row = e.target.closest(".level-row");
+    if (row && !row.classList.contains("locked")) {
+      const id = +row.dataset.level;
+      startLevel(id);
+    }
+  });
+
+  $btnSound.addEventListener("click", () => {
+    const on = Sound.toggle();
+    $btnSound.innerHTML = on ? "&#x1F50A;" : "&#x1F507;";
+  });
+
+  $btnMenu.addEventListener("click", showLevelMenu);
+
+  // Resume audio on first interaction (browser autoplay policies require a user gesture).
+  document.addEventListener("pointerdown", () => Sound.resume(), { once: true });
+
+  // ---------- Boot ----------
+  const progress = loadProgress();
+  const startId = Math.min(progress.maxLevel || 1, LEVELS.length);
+  startLevel(startId);
+})();
+</script>
+</body>
+</html>
