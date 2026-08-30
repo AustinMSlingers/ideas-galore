@@ -15,6 +15,7 @@ npm run dev                  # http://localhost:3000
 npm run regenerate           # mount today's edition with the curator
 npm run regenerate -- --dry  # generate and print, save nothing
 npm run check:config         # assert the fallback config passes validation
+npm run check:holidays       # verify every holiday from today through +5 years
 npm run typecheck
 ```
 
