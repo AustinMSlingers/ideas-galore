@@ -1,0 +1,159 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Fixed design tokens. Only the values under "set per SiteConfig" change from
+ * day to day — they are written as inline custom properties by the renderer.
+ */
+:root {
+  --font-display: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino,
+    Georgia, "Times New Roman", serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+
+  /* Set per SiteConfig; these are inert placeholders. */
+  --sky-gradient: linear-gradient(180deg, #101a2e, #7a5560);
+  --sky-top: #101a2e;
+  --sky-bottom: #7a5560;
+  --accent: #c98a6b;
+  --on-accent: #0a0a0a;
+  --text: #f5f2ee;
+  --bloom-a: rgba(201, 138, 107, 0.34);
+  --bloom-b: rgba(16, 26, 46, 0.55);
+  --surface: rgba(245, 242, 238, 0.06);
+  --hairline: rgba(245, 242, 238, 0.16);
+  --muted: rgba(245, 242, 238, 0.72);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--sky-bottom);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ---------------------------------------------------------------- sky ---- */
+
+.sky {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--sky-top);
+}
+
+.sky__layer {
+  position: absolute;
+  inset: -30% 0;
+  z-index: -2;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+/*
+ * The gradient is taller than the hero and slides behind it. Animating
+ * transform (not background-position) keeps the drift on the compositor, so
+ * it stays smooth on a phone.
+ */
+.sky__base {
+  background-image: var(--sky-gradient);
+  animation: sky-drift 48s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+/*
+ * Two soft blooms drifting out of phase give the sky some weather without
+ * ever showing an edge.
+ */
+.sky__bloom {
+  z-index: -1;
+  background-image:
+    radial-gradient(55% 45% at 22% 28%, var(--bloom-a) 0%, transparent 68%),
+    radial-gradient(60% 50% at 78% 72%, var(--bloom-b) 0%, transparent 72%);
+  filter: blur(24px);
+  opacity: 0.85;
+  animation: sky-bloom 64s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+
+/*
+ * 8-bit gradients band. A whisper of noise on top scatters the steps so the
+ * sky reads as continuous rather than striped.
+ */
+.sky__grain {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.14;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/*
+ * Below the fold the sky keeps going: the page runs from the gradient's last
+ * stop back to its first, so scrolling reads as the day closing. Both ends are
+ * validated stops, so the text contrast guarantee carries through. The same
+ * grain sits on top, because a document-height gradient is where banding shows
+ * up worst.
+ */
+.page-body {
+  position: relative;
+  background-image: linear-gradient(180deg, var(--sky-bottom) 0%, var(--sky-top) 100%);
+}
+
+.page-body::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.page-body > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes sky-drift {
+  from {
+    transform: translate3d(0, -6%, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(0, 6%, 0) scale(1.1);
+  }
+}
+
+@keyframes sky-bloom {
+  from {
+    transform: translate3d(-3%, 2%, 0) scale(1.05);
+    opacity: 0.7;
+  }
+  to {
+    transform: translate3d(4%, -3%, 0) scale(1.16);
+    opacity: 0.95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .sky__base,
+  .sky__bloom {
+    animation: none;
+  }
+}
