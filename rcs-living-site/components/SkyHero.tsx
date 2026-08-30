@@ -48,7 +48,7 @@ export function SkyHero({ config }: { config: SiteConfig }) {
       <div className="mx-auto flex w-full max-w-shell flex-1 flex-col justify-center py-section">
         <h1 className="max-w-[18ch] font-display text-hero text-balance">{heroLine}</h1>
         <p className="mt-stack max-w-prose text-lead" style={{ color: "var(--muted)" }}>
-          {baseInfo.tagline}
+          {baseInfo.shortDefinition}
         </p>
       </div>
 

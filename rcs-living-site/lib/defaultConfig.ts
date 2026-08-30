@@ -25,12 +25,14 @@ export const defaultConfig: SiteConfig = {
     textColor: "#f5f2ee",
     tone: "calm",
   },
-  heroLine: "Low cloud over the ridge, and the workshop lights are on.",
+  heroLine: "Low cloud over the ridge, and the lights are still on.",
   sectionCopy: {
+    // Sits under the locked definition, so it adds the angle rather than
+    // restating what is already printed above it.
     whatWeAre:
-      "A small studio that builds software the way you'd build a shed: carefully, in the open, and only as big as it needs to be. Everything here is made by a handful of people who use it themselves.",
+      "Grey days are the honest test of it. Nobody is waiting on a brief, so the only thing that moves the work forward is the work.",
     products:
-      "Some of these are finished, some are still on the bench. We ship when a thing earns its keep, not when the calendar says to.",
+      "Some are earning their keep, some are still being built. Each one ships when it is ready to be used, not when a calendar says so.",
   },
   dailyEntry:
     "Grey all day, the kind that doesn't threaten anything — just sits on the hills and stays. Good weather for the unglamorous half of the work: reading back old code, cutting what nobody uses, and leaving the rest quieter than we found it.",

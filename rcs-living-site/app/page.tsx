@@ -52,8 +52,8 @@ export default async function Home() {
           <span>
             {baseInfo.name} · {baseInfo.location}
           </span>
-          <a href={`mailto:${baseInfo.contactEmail}`} className="hover:text-[var(--text)]">
-            {baseInfo.contactEmail}
+          <a href={baseInfo.founder.href} className="hover:text-[var(--text)]">
+            {baseInfo.founder.name} · {baseInfo.founder.domain}
           </a>
         </div>
       </footer>

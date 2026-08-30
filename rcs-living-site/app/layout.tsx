@@ -4,8 +4,8 @@ import { baseInfo } from "@/lib/baseInfo";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: `${baseInfo.name} — ${baseInfo.tagline}`,
-  description: baseInfo.tagline,
+  title: baseInfo.name,
+  description: baseInfo.definition,
 };
 
 export const viewport: Viewport = {

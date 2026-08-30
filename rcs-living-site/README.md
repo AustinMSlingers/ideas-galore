@@ -54,7 +54,7 @@ service role (which bypasses RLS) touches it. The Supabase linter flags this as
 | `types/siteConfig.ts` | The daily object: date, weather, holiday, mood, copy, announcement. |
 | `lib/validateConfig.ts` | Property-based design validation. Returns `{ valid, failures }`. |
 | `lib/defaultConfig.ts` | Hand-tuned fallback that passes validation. |
-| `lib/baseInfo.ts` | Locked base data. **`products` is a placeholder — replace it.** |
+| `lib/baseInfo.ts` | Locked studio data: definition, products, closing line, founder. Never generated. |
 | `lib/color.ts` | Contrast, saturation, luminance and hue maths behind the rules. |
 | `lib/theme.ts` | Turns a validated mood into CSS custom properties. |
 | `lib/weather.ts` | Current conditions for the studio from Open-Meteo (free, no key). |
@@ -82,6 +82,25 @@ it checks *properties*, so any palette that satisfies them belongs to this site:
 Every failure message names the value, the measured number, the threshold, and
 a way to fix it — a later build session feeds `failures` back to the model as
 retry instructions.
+
+## What the curator may and may not touch
+
+`baseInfo` is passed into the brief as **read-only** context and the page
+renders it from that module directly, so the guarantee is structural rather
+than a matter of the model behaving:
+
+| On the page | Source |
+| --- | --- |
+| Studio definition, product names, domains, links, statuses, closing line, founder | `lib/baseInfo.ts` — locked |
+| Hero line, the What We Are angle, products intro, daily entry, mood | the day's config — generated |
+
+The definition is printed verbatim above the generated "What We Are" copy, so
+what reaches the page is the definition itself, never a paraphrase of it. The
+curator may name products, but only exactly as written, and generated copy may
+not contain a URL or domain at all — every link is rendered from the locked
+data, so a link in generated copy is by definition wrong. That check runs on
+`heroLine`, both `sectionCopy` fields and `dailyEntry`; `announcement` is exempt
+because it is composed from studio news you wrote, which may carry a real link.
 
 Two colour decisions are made in code rather than configured: surfaces and
 hairlines are tinted with `textColor` (so components work under a light sky as

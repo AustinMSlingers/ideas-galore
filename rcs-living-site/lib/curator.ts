@@ -21,11 +21,20 @@ Plain, specific, unhurried. Concrete nouns over adjectives. Never markety, never
 
 THE FIELDS
 - heroLine: the concept in one line. It is the largest text on the page.
-- sectionCopy.whatWeAre: who the studio is, told through today's mood. The facts stay the same every day; the angle changes.
-- sectionCopy.products: an introduction to the product list. Do not name individual products.
+- sectionCopy.whatWeAre: the day's angle on the studio. The locked definition is printed above this line on the page — do not restate, summarise or rewrite it. Add the view from today instead.
+- sectionCopy.products: an introduction to the product list. You may name products, but only exactly as they are written below.
 - dailyEntry: the day's short entry — what the weather is doing and what that makes today good for.
 - announcement: only when there is studio news below. Compose one line from it; keep every fact intact, and never invent news.
 - mood: the palette. Read the design rules as hard constraints, not suggestions.
+
+READ-ONLY STUDIO DATA
+The studio block in the brief — the definition, the product names, their
+domains and statuses, the closing line, the founder — is locked. It is context
+for you to write around, and the page renders it verbatim from its own source.
+You may refer to any of it. You may not restate the definition, rename a
+product, alter or invent a status, or put any URL or domain in your copy: every
+link on the page is rendered from the locked data, so a link in generated copy
+is always wrong.
 
 DESIGN RULES — an edition that breaks one is rejected and sent back to you:
 ${describeDesignRules()}`;
@@ -99,10 +108,17 @@ function buildBrief(context: CuratorContext): string {
     }`,
     `HOLIDAY: ${holiday ?? "none"}.`,
     "",
-    `THE STUDIO: ${baseInfo.name} — ${baseInfo.tagline} Founded ${baseInfo.foundedYear}.`,
-    `THE PRODUCT LIST (context only, do not name them): ${products
-      .map((product) => `${product.name} [${product.status}]`)
-      .join(", ")}.`,
+    "THE STUDIO — READ-ONLY. Reference it; never alter it.",
+    `  ${baseInfo.name}, ${baseInfo.location}.`,
+    `  Definition (printed verbatim on the page): ${baseInfo.definition}`,
+    `  Founder: ${baseInfo.founder.name}.`,
+    "",
+    "THE PRODUCTS — READ-ONLY. Names and statuses exactly as written:",
+    ...products.map(
+      (product) =>
+        `  ${product.name} [${product.status}]${product.description ? ` — ${product.description}` : ""}`,
+    ),
+    `  The grid closes with: "${baseInfo.productsClosingLine}"`,
     "",
   ];
 
@@ -141,6 +157,28 @@ function buildBrief(context: CuratorContext): string {
 function editorialFailures(config: SiteConfig, context: CuratorContext): string[] {
   const failures: string[] = [];
   const hasNews = context.announcements.length > 0;
+
+  // Every link on the page is rendered from baseInfo, so a URL in generated
+  // copy is either invented or a mangled copy of a real one. The announcement
+  // is exempt: it is composed from studio news the user wrote, which may
+  // legitimately carry a link.
+  const linkPattern = /(https?:\/\/|\b[a-z0-9-]+\.(?:com|net|org|io|co|app|dev|studio)\b)/i;
+  const authored: Array<[string, string]> = [
+    ["heroLine", config.heroLine],
+    ["sectionCopy.whatWeAre", config.sectionCopy.whatWeAre],
+    ["sectionCopy.products", config.sectionCopy.products],
+    ["dailyEntry", config.dailyEntry],
+  ];
+
+  for (const [field, value] of authored) {
+    const match = linkPattern.exec(value ?? "");
+    if (match) {
+      failures.push(
+        `${field} contains "${match[0]}". Generated copy must not contain URLs or domains — ` +
+          `every link on the page is rendered from the locked studio data. Remove it.`,
+      );
+    }
+  }
 
   if (hasNews && config.announcement === null) {
     failures.push(
