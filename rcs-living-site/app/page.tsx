@@ -4,29 +4,21 @@ import { ProductsGrid } from "@/components/ProductsGrid";
 import { SkyHero } from "@/components/SkyHero";
 import { WhatWeAre } from "@/components/WhatWeAre";
 import { baseInfo } from "@/lib/baseInfo";
-import { defaultConfig } from "@/lib/defaultConfig";
+import { getCurrentEdition } from "@/lib/editions";
 import { themeVars } from "@/lib/theme";
-import { validateConfig } from "@/lib/validateConfig";
-import type { SiteConfig } from "@/types/siteConfig";
 
 /**
- * Build session 1 renders straight from the hand-tuned fallback. A later
- * session swaps this for the stored config of the day and falls back here when
- * that config is missing or fails validation.
+ * Re-check for a new edition every five minutes. The cron publishes once a day,
+ * so this is really about picking up a manual regeneration without a redeploy.
  */
-function getConfig(): SiteConfig {
-  return defaultConfig;
-}
+export const revalidate = 300;
 
-export default function Home() {
-  const config = getConfig();
+export default async function Home() {
+  const edition = await getCurrentEdition();
+  const config = edition.config;
 
-  if (process.env.NODE_ENV !== "production") {
-    const { valid, failures } = validateConfig(config);
-    if (!valid) {
-      console.warn(`[site-config] ${failures.length} design failure(s):`);
-      for (const failure of failures) console.warn(`  - ${failure}`);
-    }
+  if (edition.source === "fallback") {
+    console.warn(`[edition] rendering the fallback config — ${edition.note ?? "no reason given"}`);
   }
 
   return (

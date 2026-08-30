@@ -23,7 +23,10 @@ export const baseInfo = {
   shortName: "RCS",
   /** Sits under the hero line; brand-level, never generated. */
   tagline: "A small studio building software, games and quiet machines.",
-  location: "Kentucky, USA",
+  location: "Stephenville, Texas",
+  /** Everything the site calls "today" is resolved in this zone. */
+  timezone: "America/Chicago",
+  coordinates: { latitude: 32.2207, longitude: -98.2023 },
   foundedYear: 2025,
   /** Public contact address only — no keys or secrets ever live in this repo. */
   contactEmail: "hello@rusticclouds.studio",

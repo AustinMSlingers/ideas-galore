@@ -249,3 +249,19 @@ export function validateConfig(config: SiteConfig): ValidationResult {
 
   return { valid: failures.length === 0, failures };
 }
+
+/**
+ * The rules as instructions, generated from the same constants the checks use
+ * so the curator's brief can never drift from what is actually enforced.
+ */
+export function describeDesignRules(): string {
+  const r = DESIGN_RULES;
+  return [
+    `- textColor must reach a WCAG AA contrast ratio of at least ${r.MIN_CONTRAST_RATIO}:1 against EVERY stop in skyGradient. In practice this means the whole sky sits on one side of the text: a light textColor needs a uniformly deep sky, a dark textColor a uniformly pale one.`,
+    `- skyGradient has ${r.MIN_GRADIENT_STOPS}–${r.MAX_GRADIENT_STOPS} stops, ordered top of the sky to bottom.`,
+    `- No colour may exceed ${Math.round(r.MAX_SATURATION * 100)}% HSL saturation. Weather colours, not neon.`,
+    `- Adjacent stops must differ in relative luminance by no more than ${r.MAX_ADJACENT_LUMINANCE_DELTA} (so the blend does not band) and at least ${r.MIN_ADJACENT_LUMINANCE_DELTA} (so it does not look flat).`,
+    `- accentColor must sit within ${r.MAX_ACCENT_HUE_DISTANCE}° of the nearest saturated sky hue, so it reads as part of the same family rather than a foreign colour.`,
+    `- Copy limits, in characters: heroLine ${COPY_LIMITS.heroLine}, sectionCopy.whatWeAre ${COPY_LIMITS.whatWeAre}, sectionCopy.products ${COPY_LIMITS.products}, dailyEntry ${COPY_LIMITS.dailyEntry}, announcement ${COPY_LIMITS.announcement}.`,
+  ].join("\n");
+}

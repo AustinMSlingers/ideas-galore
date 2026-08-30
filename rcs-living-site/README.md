@@ -10,10 +10,41 @@ Next.js 14 (app router) · TypeScript · Tailwind.
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000
-npm run check:config # asserts the fallback config passes design validation
+cp .env.example .env.local   # then fill it in — see Setup below
+npm run dev                  # http://localhost:3000
+npm run regenerate           # mount today's edition with the curator
+npm run regenerate -- --dry  # generate and print, save nothing
+npm run check:config         # assert the fallback config passes validation
 npm run typecheck
 ```
+
+## Setup
+
+1. **Env vars.** Copy `.env.example` to `.env.local` and fill in all five. The
+   same five go in Vercel's project settings. Nothing secret is ever committed.
+
+2. **Database.** Apply `supabase/migrations/0001_living_site.sql` (SQL editor or
+   `supabase db push`).
+
+3. **Expose the schema.** In Supabase: **Project Settings → API → Exposed
+   schemas → add `living_site` → Save.** PostgREST serves only listed schemas,
+   so without this every query 404s. (Do *not* set `pgrst.db_schemas` on the
+   `authenticator` role by hand — that permanently stops the dashboard from
+   managing exposed schemas.) If you miss this step the app says so: the error
+   names the setting and the path to it.
+
+4. **Announcements** are optional. Add one and the next generation folds it into
+   the edition and shows the banner:
+
+   ```sql
+   insert into living_site.announcements (text, active, starts_on, ends_on)
+   values ('The winter run of prints goes up Saturday at 9am.', true, null, '2026-12-31');
+   ```
+
+Note: `living_site.announcements` has RLS enabled with **no** policies on
+purpose — unpublished studio news should not be world-readable, and only the
+service role (which bypasses RLS) touches it. The Supabase linter flags this as
+`rls_enabled_no_policy`; that is the intended state, not an oversight.
 
 ## Shape
 
@@ -25,7 +56,14 @@ npm run typecheck
 | `lib/baseInfo.ts` | Locked base data. **`products` is a placeholder — replace it.** |
 | `lib/color.ts` | Contrast, saturation, luminance and hue maths behind the rules. |
 | `lib/theme.ts` | Turns a validated mood into CSS custom properties. |
-| `app/page.tsx` | Renders the page from one config. |
+| `lib/weather.ts` | Current conditions for the studio from Open-Meteo (free, no key). |
+| `lib/holidays.ts` | Fixed and calculated holidays, computed locally — no API. |
+| `lib/curator.ts` | The Claude call: brief, schema, and the validation retry loop. |
+| `lib/runGeneration.ts` | One day's generation end to end. The cron and the script share it. |
+| `lib/editions.ts` | Reading, saving and falling back. |
+| `app/api/generate/route.ts` | The daily generation, behind `CRON_SECRET`. |
+| `app/page.tsx` | Renders the newest valid edition, or the fallback. |
+| `supabase/migrations/` | Schema, RLS and grants. |
 
 ## The design rules
 
@@ -50,8 +88,28 @@ well as a dark one), and anything sitting on the accent gets a derived
 black-or-white foreground, since the accent is validated for hue harmony, not
 for legibility.
 
-## Not in this build
+## How a day gets made
 
-Supabase, cron, holiday lookup and any API calls are build session 2. There are
-no environment variables yet, and **no secrets belong in this repo** — they will
-live in Vercel env vars.
+At 11:00 UTC (6am Central) Vercel Cron hits `/api/generate` with
+`Authorization: Bearer $CRON_SECRET`. That route:
+
+1. Gathers the facts — Open-Meteo for the sky, `lib/holidays` for the date,
+   Supabase for active announcements and yesterday's edition.
+2. Briefs the curator (`claude-sonnet-5`, adaptive thinking, structured output)
+   and gets back a candidate SiteConfig.
+3. Overwrites `date`, `weather` and `holiday` with the real facts — the curator
+   phrases them, it does not get to invent them — then runs `validateConfig`.
+4. On failure, sends the specific failure messages back and asks again, up to
+   three attempts.
+5. Saves the accepted edition to `living_site.configs`, keyed on date.
+
+If all three attempts fail, **nothing is written**. The site keeps rendering
+yesterday's edition, and the route returns 502 so the miss shows up red in the
+cron log instead of passing silently.
+
+The generator is also the thing that decides whether an announcement appears:
+no active announcement forces `announcement` to null, and an active one that the
+curator ignores is sent back as a validation failure.
+
+**No secrets belong in this repo.** They live in Vercel env vars and, locally,
+in `.env.local` — which is gitignored.
